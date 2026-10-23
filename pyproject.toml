@@ -1,0 +1,46 @@
+[project]
+name = "makideck"
+version = "0.1.0"
+description = "A desk deck for Claude Code: plan usage, spend, sessions, Spotify with an ASCII visualizer, weather and quotes on a Thermalright Trofeo Vision USB panel, arranged in a drag-and-drop editor."
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "makyox" }]
+requires-python = ">=3.12"
+keywords = ["claude", "claude-code", "thermalright", "trofeo", "lcd", "dashboard", "macos"]
+classifiers = [
+    "Operating System :: MacOS",
+    "Environment :: MacOS X",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "pillow>=12.0",
+    "numpy>=2.0",
+    "sounddevice>=0.5",
+    "rumps>=0.4",
+    "pyusb>=1.2",
+    "hidapi>=0.14",
+    "trcc-linux>=9.9.8",
+]
+
+[project.urls]
+Homepage = "https://github.com/makyox/makideck"
+
+[project.scripts]
+makideck = "makideck.__main__:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[dependency-groups]
+dev = ["pytest>=9.0", "ruff>=0.16"]

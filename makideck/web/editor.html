@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>makideck editor</title>
+<link rel="icon" href="/assets/icon.png">
+<style>
+  :root { color-scheme: dark; --accent: #d97757; --text: #ebe8e4; --dim: #8b8895; --faint: #6c6a75;
+          --card: #0e0e13; --line: #22222b; --field: #15151c; --field-line: #2a2a33; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #060609; color: var(--dim); font: 14px -apple-system, system-ui, sans-serif; }
+  .wrap { width: min(100vw - 32px, 1920px); margin: 0 auto; padding: 36px 0 60px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+  header img { width: 40px; height: 40px; image-rendering: pixelated; }
+  h1 { margin: 0; font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: .01em; }
+  .lead { margin: 0 0 24px; }
+  .panel { position: relative; border-radius: 10px; overflow: hidden; aspect-ratio: 1920 / 462;
+           box-shadow: 0 0 0 10px #15151c, 0 20px 60px #000; background: #0b0b10; }
+  .panel > img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .row { position: absolute; left: 0; right: 0; top: 0; }
+  .tile { position: absolute; top: 0; height: 100%; background-repeat: no-repeat; background-color: #0b0b10;
+          cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+          transition: left .22s cubic-bezier(.2,.8,.2,1), width .22s, box-shadow .15s; }
+  .tile.fresh { display: grid; place-items: center; color: var(--faint); font-size: 15px; }
+  .tile::after { content: attr(data-name); position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
+          padding: 3px 10px; border-radius: 99px; background: #000c; color: var(--text); font-size: 12px;
+          white-space: nowrap; opacity: 0; transition: opacity .15s; pointer-events: none; }
+  .panel:hover .tile { box-shadow: inset 0 0 0 1px #ffffff22; }
+  .tile:hover, .tile.sel { box-shadow: inset 0 0 0 2px var(--accent) !important; }
+  .tile:hover::after, .tile.drag::after, .tile.sel::after { opacity: 1; }
+  .tile.drag { cursor: grabbing; z-index: 2; transition: box-shadow .15s;
+               box-shadow: inset 0 0 0 2px var(--accent), 0 14px 40px #000 !important; }
+  .bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+  .bar b { color: var(--text); font-weight: 500; }
+  a { color: var(--accent); }
+  button { font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--field-line);
+           border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  .tray { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .tray:empty { display: none; }
+  .chip { padding: 3px 10px; font-size: 12px; border-radius: 99px; color: var(--dim); }
+  .card { margin-top: 26px; padding: 20px 22px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); }
+  .card[hidden] { display: none; }
+  .card h2 { margin: 0 0 16px; font-size: 15px; font-weight: 500; color: var(--text); display: flex; justify-content: space-between; align-items: center; }
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px 36px; }
+  .f > label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); margin-bottom: 8px; }
+  input, select { font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--field-line);
+                  border-radius: 8px; padding: 7px 10px; outline: none; width: 100%; }
+  input[type=checkbox] { width: auto; }
+  input:focus, select:focus { border-color: var(--accent); }
+  .current { margin-top: 8px; color: var(--text); }
+  small { color: var(--faint); }
+  .results { margin-top: 6px; display: grid; gap: 2px; }
+  .results button { text-align: left; background: transparent; border-color: transparent; }
+  .results button:hover { background: var(--field); border-color: var(--field-line); }
+  .results small { margin-left: 6px; }
+  .q { display: flex; gap: 8px; margin-bottom: 8px; }
+  .q select { width: 120px; flex: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .actions { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
+  .primary { background: var(--accent); border-color: var(--accent); color: #160d09; font-weight: 600; }
+  .primary:hover { filter: brightness(1.1); }
+  .ghost { background: transparent; color: var(--dim); }
+  .err { color: #e5675f; } .ok { color: #6cc287; }
+  @media (max-width: 700px) { .wrap { padding-top: 20px; } }
+</style></head><body>
+<div class="wrap">
+  <header><img src="/assets/icon.png" alt=""><h1>makideck</h1></header>
+  <p class="lead" id="lead"></p>
+  <div class="panel" id="panel"><img id="frame" alt=""><div class="row" id="row"></div></div>
+  <div class="bar"><span id="order"></span>
+    <span><button id="reset"></button> &nbsp; <a href="/" id="back"></a></span></div>
+  <div class="tray" id="tray"></div>
+  <section class="card" id="card" hidden>
+    <h2><span id="card-title"></span><button class="ghost" id="hide"></button></h2>
+    <div class="fields" id="fields"></div>
+    <div class="actions"><button class="primary" id="save"></button><span id="msg"></span></div>
+  </section>
+</div>
+<script>
+const T = {
+  en: {
+    lead: 'Drag a tile sideways to move it, click it to change its settings. The panel follows right away.',
+    order: 'on the panel', reset: 'Default layout', back: '← live view', add: 'Add', hidden: 'Hidden tiles:',
+    hide: 'Hide tile', save: 'Save', saved: 'Saved — the panel updates in a moment', checking: 'Checking…',
+    none: '— none —', search: 'Search for a city…', nothing: 'nothing found', noSettings: 'This tile has no settings.',
+    kinds: { fx: 'Currency', crypto: 'Crypto', stock: 'Stock' }, station: 'GIG station', down: 'makideck is not answering',
+    names: {}, labels: {},
+  },
+  pl: {
+    lead: 'Przeciągnij kafelek w bok, żeby go przestawić, kliknij, żeby go ustawić. Panel zmienia się od razu.',
+    order: 'na panelu', reset: 'Układ domyślny', back: '← podgląd', add: 'Dodaj', hidden: 'Ukryte kafelki:',
+    hide: 'Ukryj kafelek', save: 'Zapisz', saved: 'Zapisane — panel odświeży się za chwilę', checking: 'Sprawdzam…',
+    none: '— brak —', search: 'Szukaj miasta…', nothing: 'nic nie znaleziono', noSettings: 'Ten kafelek nie ma ustawień.',
+    kinds: { fx: 'Waluta', crypto: 'Krypto', stock: 'Akcje' }, station: 'stacja GIG', down: 'makideck nie odpowiada',
+    names: { projects: 'Projekty dziś', session: 'Sesja', outside: 'Na zewnątrz' },
+    labels: { city: 'Miasto — pogoda, słońce, prognoza', quotes: 'Kursy (do dwóch)', scene: 'Wizualizacja',
+              rows: 'Ile projektów' },
+  },
+};
+const W = 1920, H = 462, BODY = 388;
+const PRESETS = ['fx:EUR/PLN', 'fx:USD/PLN', 'fx:CHF/PLN', 'fx:EUR/USD', 'crypto:BTC/EUR', 'crypto:ETH/EUR',
+                 'crypto:BTC/USD', 'stock:NVDA', 'stock:AAPL', 'stock:CDR.WA', 'stock:^GSPC'];
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let t = T.en, info = {}, els = {}, order = [], hidden = [];
+let frameUrl = '', frameOrder = [], lastSeq = -1, drag = null, selected = null, draft = {};
+$('row').style.height = 100 * BODY / H + '%';
+
+const name = id => t.names[id] || info[id].name;
+// Same arithmetic as deck.columns(): natural widths stretched to fill the panel.
+function spans(ids) {
+  const total = ids.reduce((a, id) => a + info[id].width, 0) || 1;
+  let x = 0; const out = {};
+  for (const id of ids) { const w = W * info[id].width / total; out[id] = [x, w]; x += w; }
+  return out;
+}
+
+function layout() {
+  const at = spans(order), src = spans(frameOrder);
+  for (const id in els) els[id].hidden = !order.includes(id);
+  for (const id of order) {
+    const el = els[id], [x, w] = at[id];
+    if (!drag || drag.id !== id) el.style.left = 100 * x / W + '%';
+    el.style.width = 100 * w / W + '%';
+    const known = frameUrl && id in src;
+    el.classList.toggle('fresh', !known);
+    el.textContent = known ? '' : name(id);
+    if (known) {
+      const [sx, sw] = src[id];
+      el.style.backgroundImage = 'url(' + frameUrl + ')';
+      el.style.backgroundSize = 100 * W / sw + '% ' + 100 * H / BODY + '%';
+      el.style.backgroundPosition = (W - sw ? 100 * sx / (W - sw) : 0) + '% 0';
+    } else el.style.backgroundImage = 'none';
+  }
+  $('order').innerHTML = t.order + ': ' + order.map(id => '<b>' + esc(name(id)) + '</b>').join(' · ');
+  $('tray').innerHTML = hidden.length ? '<span>' + t.hidden + '</span>' : '';
+  for (const id of hidden) {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = '+ ' + name(id);
+    b.onclick = () => post('/deck/order', { order: [...order, id] });
+    $('tray').appendChild(b);
+  }
+}
+
+function load(d) {
+  for (const tile of d.tiles) {
+    info[tile.id] = tile;
+    if (els[tile.id]) continue;
+    const el = document.createElement('div');
+    el.className = 'tile'; el.dataset.name = name(tile.id);
+    el.addEventListener('pointerdown', ev => grab(ev, tile.id));
+    $('row').appendChild(el); els[tile.id] = el;
+  }
+  order = d.order; hidden = d.hidden;
+  layout();
+  if (selected && !order.includes(selected)) choose(null);
+}
+
+async function post(url, body) {
+  const res = await fetch(url, { method: 'POST', body: JSON.stringify(body) });
+  const data = await res.json();
+  if (res.ok) load(data);
+  return [res.ok, data];
+}
+
+// ── Drag to reorder ───────────────────────────────────────────────────
+function grab(ev, id) {
+  ev.preventDefault();
+  els[id].setPointerCapture(ev.pointerId);
+  drag = { id, from: order.join(), x0: ev.clientX, left: spans(order)[id][0],
+           scale: W / $('panel').getBoundingClientRect().width, moved: false };
+  els[id].classList.add('drag');
+}
+addEventListener('pointermove', ev => {
+  if (!drag) return;
+  if (Math.abs(ev.clientX - drag.x0) > 4) drag.moved = true;
+  const w = spans(order)[drag.id][1];
+  const left = Math.max(0, Math.min(W - w, drag.left + (ev.clientX - drag.x0) * drag.scale));
+  els[drag.id].style.left = 100 * left / W + '%';
+  // Slot the dragged tile where its centre falls among the others.
+  const centre = left + w / 2, rest = order.filter(id => id !== drag.id), at = spans(order);
+  let i = 0, x = 0;
+  for (; i < rest.length; i++) { const rw = at[rest[i]][1]; if (centre < x + rw / 2 + w / 2) break; x += rw; }
+  const next = [...rest.slice(0, i), drag.id, ...rest.slice(i)];
+  if (next.join() !== order.join()) { order = next; layout(); }
+});
+addEventListener('pointerup', () => {
+  if (!drag) return;
+  const { id, from, moved } = drag;
+  els[id].classList.remove('drag');
+  drag = null; layout();
+  if (order.join() !== from) post('/deck/order', { order });
+  else if (!moved) choose(selected === id ? null : id);
+});
+$('reset').onclick = () => post('/deck/order', { reset: true });
+
+// ── Settings ──────────────────────────────────────────────────────────
+function choose(id) {
+  selected = id;
+  for (const k in els) els[k].classList.toggle('sel', k === id);
+  $('card').hidden = !id;
+  if (!id) return;
+  const tile = info[id];
+  draft = JSON.parse(JSON.stringify(tile.settings));
+  $('card-title').textContent = name(id);
+  $('hide').hidden = order.length < 2;
+  $('msg').textContent = '';
+  $('save').hidden = !tile.fields.length;
+  $('fields').innerHTML = tile.fields.length ? '' : '<small>' + t.noSettings + '</small>';
+  for (const f of tile.fields) $('fields').appendChild(field(f));
+  $('card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+$('hide').onclick = () => post('/deck/order', { order: order.filter(id => id !== selected) });
+
+function field(f) {
+  const box = document.createElement('div');
+  box.className = 'f';
+  box.innerHTML = '<label>' + esc(t.labels[f.key] || f.label) + '</label>';
+  const kind = { city: cityField, quotes: quotesField }[f.kind] || plainField;
+  kind(box, f);
+  if (f.hint) box.insertAdjacentHTML('beforeend', '<small>' + esc(f.hint) + '</small>');
+  return box;
+}
+
+function plainField(box, f) {
+  let input;
+  if (f.kind === 'select') {
+    input = document.createElement('select');
+    input.innerHTML = f.options.map(o => '<option' + (String(draft[f.key]) === o ? ' selected' : '') + '>' + esc(o) + '</option>').join('');
+  } else {
+    input = document.createElement('input');
+    input.type = f.kind === 'toggle' ? 'checkbox' : f.kind === 'number' ? 'number' : 'text';
+    if (f.kind === 'toggle') input.checked = !!draft[f.key]; else input.value = draft[f.key] ?? '';
+  }
+  input.onchange = input.oninput = () => {
+    draft[f.key] = f.kind === 'toggle' ? input.checked : f.kind === 'number' ? Number(input.value) : input.value;
+  };
+  box.appendChild(input);
+}
+
+function cityField(box, f) {
+  box.insertAdjacentHTML('beforeend', '<input autocomplete="off" placeholder="' + t.search + '">' +
+    '<div class="current"></div><div class="results"></div>');
+  const [input, now, results] = [box.querySelector('input'), box.querySelector('.current'), box.querySelector('.results')];
+  const show = () => {
+    const c = draft[f.key] || {};
+    now.innerHTML = '📍 ' + esc(c.name || '—') + (c.region ? ' <small>' + esc(c.region) + '</small>' : '') +
+      (c.station === 'gig' ? ' <small>· ' + t.station + '</small>' : '');
+  };
+  let timer;
+  input.oninput = () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) { results.innerHTML = ''; return; }
+    timer = setTimeout(async () => {
+      const r = await (await fetch('/cities?q=' + encodeURIComponent(q))).json();
+      results.innerHTML = r.error ? '<span class="err">' + esc(r.error) + '</span>' : r.results.length ? '' : '<small>' + t.nothing + '</small>';
+      for (const c of r.results) {
+        const b = document.createElement('button');
+        b.innerHTML = esc(c.name) + '<small>' + esc(c.region) + '</small>';
+        b.onclick = () => { draft[f.key] = c; input.value = ''; results.innerHTML = ''; show(); };
+        results.appendChild(b);
+      }
+    }, 250);
+  };
+  show();
+}
+
+function quotesField(box, f) {
+  const rows = document.createElement('div'), chips = document.createElement('div');
+  chips.className = 'chips';
+  box.append(rows, chips);
+  const list = () => (draft[f.key] = [...(draft[f.key] || []), '', ''].slice(0, 2));
+  const draw = () => {
+    const q = list();
+    rows.innerHTML = '';
+    q.forEach((spec, i) => {
+      const [kind, sym] = spec ? [spec.split(':')[0], spec.slice(spec.indexOf(':') + 1)] : ['', ''];
+      const row = document.createElement('div'); row.className = 'q';
+      const sel = document.createElement('select'), inp = document.createElement('input');
+      sel.innerHTML = '<option value="">' + t.none + '</option>' + Object.entries(t.kinds).map(([k, v]) =>
+        '<option value="' + k + '"' + (k === kind ? ' selected' : '') + '>' + v + '</option>').join('');
+      inp.value = sym; inp.disabled = !kind;
+      inp.placeholder = { fx: 'EUR/PLN', crypto: 'BTC/EUR', stock: 'NVDA' }[kind] || '';
+      const sync = () => {
+        inp.disabled = !sel.value;
+        inp.placeholder = { fx: 'EUR/PLN', crypto: 'BTC/EUR', stock: 'NVDA' }[sel.value] || '';
+        q[i] = sel.value && inp.value.trim() ? sel.value + ':' + inp.value.trim().toUpperCase() : '';
+      };
+      sel.onchange = () => { if (!sel.value) inp.value = ''; sync(); if (sel.value) inp.focus(); };
+      inp.oninput = sync;
+      row.append(sel, inp); rows.appendChild(row);
+    });
+  };
+  for (const p of PRESETS) {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = p.split(':')[1]; b.title = t.kinds[p.split(':')[0]];
+    b.onclick = () => { const q = list(); const i = q.indexOf(''); q[i < 0 ? 1 : i] = p; draw(); };
+    chips.appendChild(b);
+  }
+  draw();
+}
+
+$('save').onclick = async () => {
+  const msg = $('msg'), id = selected;
+  msg.className = ''; msg.textContent = t.checking;
+  const body = { ...draft };
+  for (const f of info[id].fields) if (f.kind === 'quotes') body[f.key] = (body[f.key] || []).filter(Boolean);
+  const [ok, data] = await post('/deck/settings/' + id, body);
+  msg.className = ok ? 'ok' : 'err';
+  msg.textContent = ok ? t.saved : data.errors.join(' · ');
+};
+
+// ── Live frame ────────────────────────────────────────────────────────
+async function poll() {
+  try {
+    const s = await (await fetch('/state')).json();
+    if (s.seq !== lastSeq && !s.view) {
+      lastSeq = s.seq;
+      const url = '/frame.jpg?' + s.seq, pre = new Image(), was = s.order;
+      pre.onload = () => { $('frame').src = url; frameUrl = url; frameOrder = was; if (!drag) layout(); };
+      pre.src = url;
+    }
+  } catch (e) { $('order').textContent = t.down; }
+  setTimeout(poll, 500);
+}
+
+fetch('/deck').then(r => r.json()).then(d => {
+  t = T[d.lang] || T.en;
+  document.documentElement.lang = d.lang;
+  $('lead').textContent = t.lead; $('reset').textContent = t.reset; $('back').textContent = t.back;
+  $('hide').textContent = t.hide; $('save').textContent = t.save;
+  load(d);
+  const want = new URLSearchParams(location.search).get('tile');
+  if (want && info[want]) choose(want);
+  poll();
+});
+</script></body></html>

@@ -1,0 +1,14 @@
+# Copy to ~/.config/makideck/config.toml — every key is optional.
+
+fps = 2.0          # dashboard refresh
+live_fps = 15.0    # while a tile animates (music playing); the panel takes ~24
+quality = 90       # JPEG quality sent to the panel
+lang = "auto"      # editor + menu language: auto | en | pl
+web_host = "127.0.0.1"   # "0.0.0.0" lets a phone on your LAN be the remote
+web_port = 8787
+
+[night]
+mode = "on"        # "on" ignores the hours, "dim" darkens, "off" blanks the panel
+start = "00:00"
+end = "07:00"
+dim = 0.3

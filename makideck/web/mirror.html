@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>makideck</title>
+<link rel="icon" href="/assets/icon.png">
+<style>
+  :root { color-scheme: dark; --accent: #d97757; }
+  body { margin: 0; background: #060609; color: #8b8895; font: 14px -apple-system, system-ui, sans-serif;
+         min-height: 100vh; display: grid; place-items: center; }
+  .wrap { width: min(100vw - 32px, 1920px); }
+  .panel { position: relative; border-radius: 10px; overflow: hidden; cursor: pointer;
+           box-shadow: 0 0 0 10px #15151c, 0 20px 60px #000; aspect-ratio: 1920 / 462; background: #0b0b10;
+           user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+  .panel img { display: block; width: 100%; height: 100%; }
+  .zone { position: absolute; border-radius: 10px; transition: background .15s, box-shadow .15s; }
+  .panel:hover .zone { box-shadow: inset 0 0 0 2px #d9775766; }
+  .zone:hover { background: #d977571f; }
+  .ripple { position: absolute; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%;
+            background: #fff5; pointer-events: none; animation: r .45s ease-out forwards; }
+  @keyframes r { to { transform: scale(3); opacity: 0; } }
+  .bar { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 22px; }
+  .bar b { color: #ebe8e4; font-weight: 500; }
+  a { color: var(--accent); }
+</style></head><body>
+<div class="wrap">
+  <div class="panel" id="panel"><img id="frame" alt="makideck"></div>
+  <div class="bar"><span id="hint"></span><span><span id="status"></span> · <a href="/editor" id="edit"></a></span></div>
+</div>
+<script>
+const T = {
+  en: { hint: 'Click a highlighted zone to use it on the panel · views close after a minute', edit: 'edit the deck',
+        dash: 'dashboard', view: 'view', down: 'makideck is not answering' },
+  pl: { hint: 'Kliknij podświetlone pole, żeby użyć go na panelu · widok zamyka się po minucie', edit: 'ustawienia panelu',
+        dash: 'dashboard', view: 'widok', down: 'makideck nie odpowiada' },
+};
+let t = T.en;
+const panel = document.getElementById('panel'), img = document.getElementById('frame');
+const statusEl = document.getElementById('status');
+let size = [1920, 462], lastSeq = -1, zonesKey = '';
+
+function zones(list) {
+  const key = JSON.stringify(list);
+  if (key === zonesKey) return;
+  zonesKey = key;
+  panel.querySelectorAll('.zone').forEach(z => z.remove());
+  for (const z of list) {
+    const [x0, y0, x1, y1] = z.box, el = document.createElement('div');
+    el.className = 'zone'; el.title = z.action;
+    Object.assign(el.style, { left: 100 * x0 / size[0] + '%', top: 100 * y0 / size[1] + '%',
+      width: 100 * (x1 - x0) / size[0] + '%', height: 100 * (y1 - y0) / size[1] + '%' });
+    panel.appendChild(el);
+  }
+}
+
+function apply(s) {
+  if (s.size[0]) { size = s.size; panel.style.aspectRatio = size[0] + ' / ' + size[1]; }
+  zones(s.zones);
+  statusEl.innerHTML = s.view ? t.view + ': <b>' + s.view + '</b>' : t.dash;
+  if (s.seq !== lastSeq) {
+    lastSeq = s.seq;
+    const next = new Image();
+    next.onload = () => { img.src = next.src; };
+    next.src = '/frame.jpg?' + s.seq;
+  }
+}
+
+async function poll() {
+  try { apply(await (await fetch('/state')).json()); } catch (e) { statusEl.textContent = t.down; }
+  setTimeout(poll, 400);
+}
+
+panel.addEventListener('click', async ev => {
+  const r = panel.getBoundingClientRect();
+  const x = Math.round((ev.clientX - r.left) * size[0] / r.width), y = Math.round((ev.clientY - r.top) * size[1] / r.height);
+  const dot = document.createElement('div');
+  dot.className = 'ripple'; dot.style.left = ev.clientX - r.left + 'px'; dot.style.top = ev.clientY - r.top + 'px';
+  panel.appendChild(dot); setTimeout(() => dot.remove(), 500);
+  apply(await (await fetch('/tap', { method: 'POST', body: JSON.stringify({ x, y }) })).json());
+});
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape') fetch('/view', { method: 'POST', body: '{"view":null}' }).then(r => r.json()).then(apply);
+});
+
+fetch('/deck').then(r => r.json()).then(d => {
+  t = T[d.lang] || T.en;
+  document.documentElement.lang = d.lang;
+  document.getElementById('hint').textContent = t.hint;
+  document.getElementById('edit').textContent = t.edit;
+});
+poll();
+</script></body></html>
