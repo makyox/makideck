@@ -17,6 +17,7 @@ import importlib.util
 import json
 import logging
 import pkgutil
+import sys
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -214,6 +215,7 @@ def load_tiles(plugin_dir: Path = PLUGIN_DIR) -> None:
         try:
             spec = importlib.util.spec_from_file_location(f"makideck_user_{path.stem}", path)
             module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module      # dataclasses & co. look themselves up here
             spec.loader.exec_module(module)
             log.info("loaded tile module %s", path)
         except Exception:

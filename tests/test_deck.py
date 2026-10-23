@@ -84,3 +84,17 @@ def test_the_example_plugin_loads_and_draws():
         assert dashboard.frame(demo_state()).getbbox() is not None
     finally:
         deck.REGISTRY.pop("countdown", None)
+
+
+def test_user_modules_can_use_dataclasses(tmp_path):
+    (tmp_path / "dc.py").write_text(
+        "from __future__ import annotations\n"
+        "from dataclasses import dataclass\n"
+        "from makideck.deck import Tile, register\n"
+        "@dataclass\nclass Reading:\n    value: float = 0.0\n"
+        "register(Tile('dc', 'Dataclass', 200, lambda c: None))\n")
+    deck.load_tiles(tmp_path)
+    try:
+        assert "dc" in deck.REGISTRY
+    finally:
+        deck.REGISTRY.pop("dc", None)
