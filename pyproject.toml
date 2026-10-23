@@ -16,6 +16,7 @@ classifiers = [
 dependencies = [
     "pillow>=12.0",
     "numpy>=2.0",
+    "psutil>=5.9",
     "sounddevice>=0.5",
     "rumps>=0.4",
     "pyusb>=1.2",

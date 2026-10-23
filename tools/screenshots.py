@@ -91,7 +91,18 @@ async def shoot() -> None:
         await page.select_option(".f select", "3")
         await page.click("#save")
         await page.wait_for_selector("#msg.ok")
-        assert get("/deck")["tiles"][2]["settings"]["rows"] == "3"
+        assert next(t for t in get("/deck")["tiles"] if t["id"] == "projects")["settings"]["rows"] == "3"
+
+        # SYS//CORE from the tray, in place of Session; a crop of it for the README.
+        order = get("/deck")["order"]
+        req = urllib.request.Request(URL + "/deck/order", method="POST", data=json.dumps(
+            {"order": [("system" if t == "session" else t) for t in order]}).encode())
+        urllib.request.urlopen(req)
+        await page.wait_for_timeout(6000)              # a few seconds of history
+        frame = Image.open(urllib.request.urlopen(URL + "/frame.jpg"))
+        x0 = 1920 * (460 + 370 + 400) // (460 + 370 + 400 + 360 + 360)
+        x1 = x0 + 1920 * 360 // (460 + 370 + 400 + 360 + 360)
+        frame.crop((x0, 0, x1, 388)).save(OUT / "system.png")
         await browser.close()
 
 

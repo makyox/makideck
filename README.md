@@ -16,6 +16,9 @@ quotes sit beside it, and you arrange all of it by dragging tiles in your browse
 | **Projects today** | where today's tokens went and the split between models | Claude Code's session transcripts, read locally |
 | **Session** | whether Claude is working right now, on what, with which model, how fast | the same transcripts |
 | **Outside** | clock, sunrise and sunset, weather for your city (tap for 10 days) and two quotes (currencies, crypto or stocks) | Open-Meteo, NBP, Kraken, Yahoo Finance; no keys needed |
+| **SYS//CORE** *(in the tray)* | your Mac's load: CPU with a load-average dial, a tower per core (efficiency/performance), the last 90 s as an ASCII sparkline, a memory map, network, swap, uptime | psutil, sampled every second |
+
+<p align="center"><img src="docs/img/system.png" alt="SYS//CORE tile" width="300"></p>
 
 The footer is today's tokens per hour. Everything except the usage query and
 the weather/price lookups stays on your Mac.

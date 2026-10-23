@@ -11,7 +11,7 @@ def test_default_columns_fill_the_panel():
 
 def test_hiding_a_tile_stretches_the_rest():
     assert deck.set_order(["claude", "outside"])
-    assert sorted(deck.hidden()) == ["projects", "session", "spotify"]
+    assert sorted(deck.hidden()) == ["projects", "session", "spotify", "system"]
     (_, a0, a1), (_, b0, b1) = deck.columns(1920)
     assert (a0, b1) == (0, 1920)
     assert abs((a1 - a0) / (b1 - b0) - 460 / 360) < 0.01

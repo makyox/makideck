@@ -84,3 +84,12 @@ def test_clip():
     assert draw.clip(d, "short", f, 500) == "short"
     cut = draw.clip(d, "a fairly long project name", f, 80)
     assert cut.endswith("…") and d.textlength(cut, font=f) <= 80
+
+
+def test_system_tile_samples_and_draws():
+    from makideck.tiles.system import METER, Sample, heat
+    s = METER.sample()
+    assert isinstance(s, Sample) and s.mem_total > 0 and len(s.cores) == len(METER.kinds)
+    assert heat(10) != heat(70) != heat(95)
+    deck.set_order(["claude", "system"])
+    assert dashboard.frame(demo_state()).getbbox() is not None
