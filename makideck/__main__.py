@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 
 from . import deck
-from .config import LOG_DIR, language, load
+from .config import LOG_DIR, load
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -91,7 +91,7 @@ def _run(args, cfg) -> int:
             VIZ.audio = listener
     ui = Controls(persist=not args.demo)
     mirror = Mirror()
-    serve(mirror, ui, cfg.web_host, args.port or cfg.web_port, language(cfg))
+    serve(mirror, ui, cfg.web_host, args.port or cfg.web_port)
     try:
         loop.run(store, cfg, ui, panel=None if args.no_panel else Panel(cfg.quality),
                  mirror=mirror, seconds=args.seconds)

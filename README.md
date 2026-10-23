@@ -70,7 +70,7 @@ The first real run asks for Keychain access to "Claude Code-credentials"
 | `makideck preview out.png` | render a frame from demo data (`--view forecast`, `--live`) |
 | `makideck login on\|off` | open the menu bar app at login |
 
-Settings that aren't about tiles (frame rate, night hours, language, web
+Settings that aren't about tiles (frame rate, night hours, web
 port) go in `~/.config/makideck/config.toml`. See
 [config.example.toml](config.example.toml). The layout and tile settings live in
 `~/.config/makideck/deck.json`, and logs go to `~/Library/Logs/makideck/`.

@@ -29,9 +29,7 @@
 <script>
 const T = {
   en: { hint: 'Click a highlighted zone to use it on the panel · views close after a minute', edit: 'edit the deck',
-        dash: 'dashboard', view: 'view', down: 'makideck is not answering' },
-  pl: { hint: 'Kliknij podświetlone pole, żeby użyć go na panelu · widok zamyka się po minucie', edit: 'ustawienia panelu',
-        dash: 'dashboard', view: 'widok', down: 'makideck nie odpowiada' },
+        dash: 'dashboard', view: 'view', down: 'makideck is not answering' }
 };
 let t = T.en;
 const panel = document.getElementById('panel'), img = document.getElementById('frame');
@@ -82,8 +80,6 @@ document.addEventListener('keydown', ev => {
 });
 
 fetch('/deck').then(r => r.json()).then(d => {
-  t = T[d.lang] || T.en;
-  document.documentElement.lang = d.lang;
   document.getElementById('hint').textContent = t.hint;
   document.getElementById('edit').textContent = t.edit;
 });

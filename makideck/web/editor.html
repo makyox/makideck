@@ -84,18 +84,7 @@ const T = {
     hide: 'Hide tile', save: 'Save', saved: 'Saved — the panel updates in a moment', checking: 'Checking…',
     none: '— none —', search: 'Search for a city…', nothing: 'nothing found', noSettings: 'This tile has no settings.',
     kinds: { fx: 'Currency', crypto: 'Crypto', stock: 'Stock' }, station: 'GIG station', down: 'makideck is not answering',
-    names: {}, labels: {},
-  },
-  pl: {
-    lead: 'Przeciągnij kafelek w bok, żeby go przestawić, kliknij, żeby go ustawić. Panel zmienia się od razu.',
-    order: 'na panelu', reset: 'Układ domyślny', back: '← podgląd', add: 'Dodaj', hidden: 'Ukryte kafelki:',
-    hide: 'Ukryj kafelek', save: 'Zapisz', saved: 'Zapisane — panel odświeży się za chwilę', checking: 'Sprawdzam…',
-    none: '— brak —', search: 'Szukaj miasta…', nothing: 'nic nie znaleziono', noSettings: 'Ten kafelek nie ma ustawień.',
-    kinds: { fx: 'Waluta', crypto: 'Krypto', stock: 'Akcje' }, station: 'stacja GIG', down: 'makideck nie odpowiada',
-    names: { projects: 'Projekty dziś', session: 'Sesja', outside: 'Na zewnątrz' },
-    labels: { city: 'Miasto — pogoda, słońce, prognoza', quotes: 'Kursy (do dwóch)', scene: 'Wizualizacja',
-              rows: 'Ile projektów' },
-  },
+  }
 };
 const W = 1920, H = 462, BODY = 388;
 const PRESETS = ['fx:EUR/PLN', 'fx:USD/PLN', 'fx:CHF/PLN', 'fx:EUR/USD', 'crypto:BTC/EUR', 'crypto:ETH/EUR',
@@ -106,7 +95,7 @@ let t = T.en, info = {}, els = {}, order = [], hidden = [];
 let frameUrl = '', frameOrder = [], lastSeq = -1, drag = null, selected = null, draft = {};
 $('row').style.height = 100 * BODY / H + '%';
 
-const name = id => t.names[id] || info[id].name;
+const name = id => info[id].name;
 // Same arithmetic as deck.columns(): natural widths stretched to fill the panel.
 function spans(ids) {
   const total = ids.reduce((a, id) => a + info[id].width, 0) || 1;
@@ -215,7 +204,7 @@ $('hide').onclick = () => post('/deck/order', { order: order.filter(id => id !==
 function field(f) {
   const box = document.createElement('div');
   box.className = 'f';
-  box.innerHTML = '<label>' + esc(t.labels[f.key] || f.label) + '</label>';
+  box.innerHTML = '<label>' + esc(f.label) + '</label>';
   const kind = { city: cityField, quotes: quotesField }[f.kind] || plainField;
   kind(box, f);
   if (f.hint) box.insertAdjacentHTML('beforeend', '<small>' + esc(f.hint) + '</small>');
@@ -326,8 +315,6 @@ async function poll() {
 }
 
 fetch('/deck').then(r => r.json()).then(d => {
-  t = T[d.lang] || T.en;
-  document.documentElement.lang = d.lang;
   $('lead').textContent = t.lead; $('reset').textContent = t.reset; $('back').textContent = t.back;
   $('hide').textContent = t.hide; $('save').textContent = t.save;
   load(d);

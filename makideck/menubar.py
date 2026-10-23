@@ -19,7 +19,7 @@ import urllib.request
 import rumps
 
 from . import launchagent
-from .config import LOG_DIR, language
+from .config import LOG_DIR
 from .config import load as load_config
 
 log = logging.getLogger(__name__)
@@ -27,18 +27,11 @@ log = logging.getLogger(__name__)
 ASSETS = os.path.join(os.path.dirname(__file__), "assets")
 RUN_MATCH = "makideck run"
 
-STRINGS = {
-    "en": {"starting": "starting…", "on": "running", "asleep": "panel asleep", "awake": "running (never sleeps)",
-           "off": "stopped", "busy": "one moment…", "start": "Start", "stop": "Stop", "restart": "Restart",
-           "auto": "Sleep at night (auto)", "sleep": "Sleep now", "wake": "Never sleep",
-           "editor": "Edit deck…", "mirror": "Live view in browser", "logs": "Show logs",
-           "login": "Open at login", "quit": "Quit makideck"},
-    "pl": {"starting": "uruchamia się…", "on": "działa", "asleep": "panel uśpiony", "awake": "działa (bez usypiania)",
-           "off": "wyłączony", "busy": "chwila…", "start": "Uruchom", "stop": "Zatrzymaj", "restart": "Restartuj",
-           "auto": "Usypiaj w nocy (auto)", "sleep": "Uśpij teraz", "wake": "Nie usypiaj",
-           "editor": "Ustawienia panelu…", "mirror": "Podgląd w przeglądarce", "logs": "Pokaż logi",
-           "login": "Uruchamiaj przy logowaniu", "quit": "Zakończ makideck"},
-}
+T = {"starting": "starting…", "on": "running", "asleep": "panel asleep", "awake": "running (never sleeps)",
+     "off": "stopped", "busy": "one moment…", "start": "Start", "stop": "Stop", "restart": "Restart",
+     "auto": "Sleep at night (auto)", "sleep": "Sleep now", "wake": "Never sleep",
+     "editor": "Edit deck…", "mirror": "Live view in browser", "logs": "Show logs",
+     "login": "Open at login", "quit": "Quit makideck"}
 
 
 def deck_pids() -> list[int]:
@@ -51,8 +44,7 @@ class Menu(rumps.App):
         super().__init__("makideck", icon=self._icon("off"), template=True, quit_button=None)
         cfg = load_config()
         self.api = f"http://127.0.0.1:{cfg.web_port}"
-        self.t = STRINGS[language(cfg)]
-        t = self.t
+        self.t = t = T
         self.status = rumps.MenuItem("makideck")
         self.toggle = rumps.MenuItem(t["start"], callback=self.on_toggle)
         self.restart = rumps.MenuItem(t["restart"], callback=self.on_restart)

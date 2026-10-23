@@ -40,7 +40,6 @@ class Config:
     fps: float = 2.0             # dashboard refresh
     live_fps: float = 15.0       # while a tile animates (the panel takes ~24)
     quality: int = 90            # JPEG
-    lang: str = "auto"           # editor + menu: auto | en | pl
     web_host: str = "127.0.0.1"
     web_port: int = 8787
     night: Night = field(default_factory=Night)
@@ -52,7 +51,7 @@ def load(path: Path = CONFIG_FILE) -> Config:
         return cfg
     try:
         raw = tomllib.loads(path.read_text())
-        for key in ("fps", "live_fps", "quality", "lang", "web_host", "web_port"):
+        for key in ("fps", "live_fps", "quality", "web_host", "web_port"):
             if key in raw:
                 setattr(cfg, key, type(getattr(cfg, key))(raw[key]))
         n = raw.get("night") or {}
@@ -65,19 +64,3 @@ def load(path: Path = CONFIG_FILE) -> Config:
         return Config()
     return cfg
 
-
-def language(cfg: Config) -> str:
-    """cfg.lang, or for "auto" the first macOS language we have strings for."""
-    if cfg.lang in ("en", "pl"):
-        return cfg.lang
-    import subprocess
-    try:
-        out = subprocess.run(["defaults", "read", "-g", "AppleLanguages"],
-                             capture_output=True, text=True, timeout=3).stdout
-    except (OSError, subprocess.TimeoutExpired):
-        return "en"
-    for line in out.splitlines():
-        code = line.strip(' ",()')[:2]
-        if code in ("en", "pl"):
-            return code
-    return "en"

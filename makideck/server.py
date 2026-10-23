@@ -45,7 +45,7 @@ class Mirror:
             return self.jpeg, self.size, self.seq, self.state
 
 
-def serve(mirror: Mirror, ui: Controls, host: str, port: int, lang: str = "en"):
+def serve(mirror: Mirror, ui: Controls, host: str, port: int):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, fmt, *args) -> None:
             log.debug(fmt, *args)
@@ -85,12 +85,12 @@ def serve(mirror: Mirror, ui: Controls, host: str, port: int, lang: str = "en"):
             elif url.path == "/state":
                 self.json(self.status())
             elif url.path == "/deck":
-                self.json({**deck.to_json(), "lang": lang})
+                self.json(deck.to_json())
             elif url.path == "/cities":
                 from .sources.outside import find_cities
                 q = parse_qs(url.query).get("q", [""])[0].strip()
                 try:
-                    self.json({"results": find_cities(q, lang) if len(q) > 1 else []})
+                    self.json({"results": find_cities(q) if len(q) > 1 else []})
                 except Exception as e:
                     log.warning("city search %r: %s", q, e)
                     self.json({"results": [], "error": str(e)})
